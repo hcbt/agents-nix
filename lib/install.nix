@@ -1,0 +1,111 @@
+{ lib }:
+let
+  inherit (import ./discover.nix { inherit lib; }) discover;
+  inherit (import ./bundle.nix { inherit lib; }) bundle;
+  inherit (import ./mcp-files.nix { inherit lib; })
+    mcpJson
+    grokToml
+    codexToml
+    opencodeJson
+    ;
+
+  markerName = ".agents-nix-managed.json";
+
+  skillsHook =
+    {
+      bundleDrv,
+      claudeSkills,
+    }:
+    lib.optionalString (bundleDrv != null) ''
+      install_skills_dir() {
+        local dest="$1"
+        if [ -e "$dest" ] && [ ! -f "$dest/${markerName}" ]; then
+          echo "agents-nix: refusing to replace unmarked $dest" >&2
+          exit 1
+        fi
+        mkdir -p "$dest"
+        find "$dest" -mindepth 1 -maxdepth 1 ! -name '${markerName}' -exec rm -rf {} +
+        for skill in ${lib.escapeShellArg (toString bundleDrv)}/*; do
+          [ -e "$skill" ] || continue
+          ln -s "$skill" "$dest/$(basename "$skill")"
+        done
+        printf '%s\n' '{"version":1,"kind":"skills"}' > "$dest/${markerName}"
+      }
+
+      install_skills_dir "$PWD/.agents/skills"
+      ${lib.optionalString claudeSkills ''install_skills_dir "$PWD/.claude/skills"''}
+    '';
+
+  mcpHook =
+    files:
+    lib.concatMapStringsSep "\n" (
+      spec:
+      lib.optionalString (spec.src != null) ''
+        take_file() {
+          local file="$1"
+          local stamp="$1.agents-nix"
+          mkdir -p "$(dirname "$file")"
+          if [ -e "$file" ] && [ ! -f "$stamp" ]; then
+            rm -rf "$file.old"
+            mv "$file" "$file.old"
+          fi
+        }
+        take_file "$PWD/${spec.rel}"
+        cp ${lib.escapeShellArg (toString spec.src)} "$PWD/${spec.rel}"
+        touch "$PWD/${spec.rel}.agents-nix"
+      ''
+    ) files;
+in
+{
+  inherit markerName;
+
+  mkProjectHook =
+    {
+      pkgs,
+      skills ? { },
+      mcpServers ? { },
+      claudeSkills ? true,
+    }:
+    let
+      catalog = discover skills;
+      bundleAttrs = bundle { inherit pkgs skills; };
+      bundleDrv =
+        if catalog == { } then
+          null
+        else
+          pkgs.runCommand "agent-skills-bundle" { } ''
+            mkdir -p "$out"
+            ${lib.concatMapStringsSep "\n" (
+              id: "ln -s ${lib.escapeShellArg (toString bundleAttrs.${id})} \"$out/${id}\""
+            ) (lib.attrNames bundleAttrs)}
+          '';
+      jsonFormat = pkgs.formats.json { };
+      tomlFormat = pkgs.formats.toml { };
+      hasMcp = mcpServers != { };
+      mcpFiles = [
+        {
+          rel = ".mcp.json";
+          src = if hasMcp then jsonFormat.generate "mcp.json" (mcpJson mcpServers) else null;
+        }
+        {
+          rel = ".grok/config.toml";
+          src = if hasMcp then tomlFormat.generate "grok-mcp.toml" (grokToml mcpServers) else null;
+        }
+        {
+          rel = ".codex/config.toml";
+          src = if hasMcp then tomlFormat.generate "codex-mcp.toml" (codexToml mcpServers) else null;
+        }
+        {
+          rel = "opencode.json";
+          src = if hasMcp then jsonFormat.generate "opencode-mcp.json" (opencodeJson mcpServers) else null;
+        }
+      ];
+    in
+    ''
+      set -euo pipefail
+      ${skillsHook {
+        inherit bundleDrv claudeSkills;
+      }}
+      ${mcpHook mcpFiles}
+    '';
+}
