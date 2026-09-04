@@ -1,0 +1,3 @@
+# Project-local skills are in v1
+
+The same skill catalog (one sources list) can be installed into the user home (Home Manager) and into a project directory. Project dests are gitignored and nix-managed: a hook materialises them under `$PWD`. Dests are an explicit list — nothing is written until you name them. A dest that already exists and is not marked as ours is refused; there is no `force` in v1. The flake also exports `devenvModules.default` as well as `lib.mkProjectSkillsHook`.
