@@ -36,7 +36,10 @@ in
   options.programs.grok = {
     enable = lib.mkEnableOption "Grok Build";
 
-    package = lib.mkPackageOption pkgs "grok-build" { nullable = true; };
+    package = lib.mkPackageOption pkgs "grok-build" {
+      nullable = true;
+      default = null;
+    };
 
     enableMcpIntegration = lib.mkOption {
       type = lib.types.bool;

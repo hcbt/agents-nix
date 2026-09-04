@@ -59,7 +59,10 @@ in
   options.programs.muse-code = {
     enable = lib.mkEnableOption "Muse Code";
 
-    package = lib.mkPackageOption pkgs "muse-code" { nullable = true; };
+    package = lib.mkPackageOption pkgs "muse-code" {
+      nullable = true;
+      default = null;
+    };
 
     enableMcpIntegration = lib.mkOption {
       type = lib.types.bool;
