@@ -22,6 +22,7 @@
       checks = forAllSystems (pkgs: {
         eval-hm = import ./tests/eval-hm.nix { inherit pkgs; };
         eval-devenv = import ./tests/eval-devenv.nix { inherit pkgs; };
+        eval-keys = import ./tests/eval-keys.nix { inherit pkgs; };
       });
     };
 }

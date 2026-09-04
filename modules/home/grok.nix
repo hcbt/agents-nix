@@ -7,6 +7,7 @@
 let
   cfg = config.programs.grok;
   tomlFormat = pkgs.formats.toml { };
+  inherit (import ../../lib { inherit lib; }) toFileKeys;
 
   transformedMcpServers = lib.optionalAttrs (cfg.enableMcpIntegration && config.programs.mcp.enable) (
     lib.mapAttrs (
@@ -21,9 +22,9 @@ let
 
   mcpServers = lib.recursiveUpdate transformedMcpServers (cfg.settings.mcpServers or { });
 
-  settings =
-    (removeAttrs cfg.settings [ "mcpServers" ])
-    // lib.optionalAttrs (mcpServers != { }) { mcp_servers = mcpServers; };
+  settings = toFileKeys (
+    cfg.settings // lib.optionalAttrs (mcpServers != { }) { inherit mcpServers; }
+  );
 
   skillFiles = lib.mapAttrs' (
     id: src:
@@ -48,7 +49,6 @@ in
         Merge {option}`programs.mcp.servers` into
         {option}`programs.grok.settings.mcpServers`.
         Settings-based servers take precedence on name clash.
-        Written as {code}`mcp_servers` in {file}`config.toml`.
       '';
     };
 
@@ -73,6 +73,7 @@ in
       default = { };
       description = ''
         Configuration written to {file}`~/.grok/config.toml`.
+        Use camelCase keys; they are converted to snake_case in the file.
       '';
     };
 

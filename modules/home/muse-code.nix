@@ -7,6 +7,7 @@
 let
   cfg = config.programs.muse-code;
   jsonFormat = pkgs.formats.json { };
+  inherit (import ../../lib { inherit lib; }) toFileKeys;
 
   toMuseServer =
     name: server:
@@ -44,13 +45,9 @@ let
 
   mcpServers = lib.recursiveUpdate transformedMcpServers (cfg.settings.mcpServers or { });
 
-  settings =
-    (removeAttrs cfg.settings [
-      "mcpServers"
-      "schemaVersion"
-    ])
-    // lib.optionalAttrs (cfg.settings ? schemaVersion) { schema_version = cfg.settings.schemaVersion; }
-    // lib.optionalAttrs (mcpServers != { }) { mcp_servers = mcpServers; };
+  settingsNix = cfg.settings // lib.optionalAttrs (mcpServers != { }) { inherit mcpServers; };
+
+  settings = toFileKeys settingsNix;
 
   skillFiles = lib.mapAttrs' (
     id: src:
@@ -75,7 +72,6 @@ in
         Merge {option}`programs.mcp.servers` into
         {option}`programs.muse-code.settings.mcpServers`.
         Settings-based servers take precedence on name clash.
-        Written as {code}`mcp_servers` in {file}`settings.json`.
       '';
     };
 
@@ -100,6 +96,7 @@ in
       default = { };
       description = ''
         Configuration written to {file}`~/.config/muse/settings.json`.
+        Use camelCase keys; they are converted to snake_case in the file.
         Must include {option}`schemaVersion` (use 1) or Muse refuses to start.
       '';
     };
@@ -127,7 +124,7 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = settings == { } || settings ? schema_version;
+        assertion = settingsNix == { } || settingsNix ? schemaVersion;
         message = "programs.muse-code.settings must set schemaVersion (use 1)";
       }
     ];
