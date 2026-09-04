@@ -4,7 +4,6 @@ let
   inherit (import ./bundle.nix { inherit lib; }) bundle;
   inherit (import ./mcp-files.nix { inherit lib; })
     mcpJson
-    grokToml
     codexToml
     opencodeJson
     ;
@@ -14,6 +13,7 @@ let
   skillsHook =
     {
       bundleDrv,
+      agentsSkills,
       claudeSkills,
     }:
     lib.optionalString (bundleDrv != null) ''
@@ -32,7 +32,7 @@ let
         printf '%s\n' '{"version":1,"kind":"skills"}' > "$dest/${markerName}"
       }
 
-      install_skills_dir "$PWD/.agents/skills"
+      ${lib.optionalString agentsSkills ''install_skills_dir "$PWD/.agents/skills"''}
       ${lib.optionalString claudeSkills ''install_skills_dir "$PWD/.claude/skills"''}
     '';
 
@@ -43,9 +43,8 @@ let
       lib.optionalString (spec.src != null) ''
         take_file() {
           local file="$1"
-          local stamp="$1.agents-nix"
           mkdir -p "$(dirname "$file")"
-          if [ -e "$file" ] && [ ! -f "$stamp" ]; then
+          if [ -e "$file" ]; then
             rm -rf "$file.old"
             mv "$file" "$file.old"
           fi
@@ -54,7 +53,6 @@ let
         rm -f "$PWD/${spec.rel}"
         cp ${lib.escapeShellArg (toString spec.src)} "$PWD/${spec.rel}"
         chmod u+w "$PWD/${spec.rel}"
-        touch "$PWD/${spec.rel}.agents-nix"
       ''
     ) files;
 in
@@ -66,8 +64,9 @@ in
       pkgs,
       skills ? { },
       mcpServers ? { },
-      mcpEnable ? false,
-      claudeSkills ? true,
+      mcpDests ? [ ],
+      agentsSkills ? false,
+      claudeSkills ? false,
     }:
     let
       catalog = discover skills;
@@ -84,30 +83,25 @@ in
           '';
       jsonFormat = pkgs.formats.json { };
       tomlFormat = pkgs.formats.toml { };
-      hasMcp = mcpEnable;
-      mcpFiles = [
-        {
-          rel = ".mcp.json";
-          src = if hasMcp then jsonFormat.generate "mcp.json" (mcpJson mcpServers) else null;
-        }
-        {
-          rel = ".grok/config.toml";
-          src = if hasMcp then tomlFormat.generate "grok-mcp.toml" (grokToml mcpServers) else null;
-        }
-        {
-          rel = ".codex/config.toml";
-          src = if hasMcp then tomlFormat.generate "codex-mcp.toml" (codexToml mcpServers) else null;
-        }
-        {
-          rel = "opencode.json";
-          src = if hasMcp then jsonFormat.generate "opencode-mcp.json" (opencodeJson mcpServers) else null;
-        }
-      ];
+      mcpSrc =
+        rel:
+        if rel == ".mcp.json" || rel == ".agents/mcp_config.json" then
+          jsonFormat.generate "mcp.json" (mcpJson mcpServers)
+        else if rel == ".codex/config.toml" then
+          tomlFormat.generate "codex-mcp.toml" (codexToml mcpServers)
+        else if rel == "opencode.json" then
+          jsonFormat.generate "opencode-mcp.json" (opencodeJson mcpServers)
+        else
+          throw "agents-nix: unknown MCP dest ${rel}";
+      mcpFiles = map (rel: {
+        inherit rel;
+        src = mcpSrc rel;
+      }) mcpDests;
     in
     ''
       set -euo pipefail
       ${skillsHook {
-        inherit bundleDrv claudeSkills;
+        inherit bundleDrv agentsSkills claudeSkills;
       }}
       ${mcpHook mcpFiles}
     '';

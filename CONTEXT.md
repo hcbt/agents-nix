@@ -1,11 +1,11 @@
 # Agents
 
-Home Manager modules for CLI coding harnesses, and the catalogs those harnesses share.
+Home Manager and devenv modules for CLI coding harnesses, and the catalogs those harnesses share.
 
 ## Language
 
 **Agent**:
-A CLI coding harness configured through a `programs.<name>` Home Manager module.
+A CLI coding harness on the v1 closed list. Home Manager configures it through `programs.<name>`. Devenv names the same Agent under `agents.<name>` and exposes only that Agent’s integration flags.
 _Avoid_: editor, IDE fork, GUI, VS Code fork
 
 **Catalog**:
@@ -33,15 +33,23 @@ A Catalog entry that is one Skill directory (`SKILL.md` at the path root). Its i
 _Avoid_: explicit skill, extra skill, reserved prefix
 
 **Project-local**:
-Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. An unmarked existing dest is refused. The shared project dest is `.agents/skills`; a per-harness folder is added only when that harness does not read `.agents`.
+Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. A dest is written only when at least one Agent that maps to it has that Catalog’s integration flag on. An existing skill dest without this flake’s marker is refused. An existing MCP dest is renamed to `*.old` and replaced.
 _Avoid_: vendoring, target, local skills as a second catalog
+
+**Shared dest**:
+A project file more than one Agent reads for the same Catalog. Opting in any of those Agents writes that one file with the full Catalog. Never split per Agent.
+_Avoid_: per-agent copy, `.mcp.json.grok`
+
+**Holdout**:
+A project dest only one Agent reads. Written only when that Agent’s matching flag is on.
+_Avoid_: extra config, sidecar
 
 **User instructions**:
 The always-loaded markdown file an Agent reads at session start. Filenames differ by Agent (`AGENTS.md`, `CLAUDE.md`); the Catalog is the content, not the filename.
 _Avoid_: rules, memory, CLAUDE.md (as the concept)
 
 **Inheritance**:
-An enabled Agent receiving a Catalog because that Agent’s integration flag for that Catalog is on. A disabled Agent gets no files from this flake. Config without installing the CLI is `enable = true` and `package = null`.
+An Agent receiving a Catalog because that Agent’s matching integration flag is on. Filling a Catalog is not enough. Home Manager also requires the Agent enabled (`package = null` still configures without installing the CLI); devenv has no Agent enable and writes project dests.
 _Avoid_: wrapping, sync, target, file sink, master switch
 
 **Overlay**:

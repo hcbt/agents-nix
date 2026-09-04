@@ -36,15 +36,16 @@ Catalogs live at `agents.*`. `agents.mcp.enable` assigns `programs.mcp` and does
   imports = [ inputs.agents-nix.devenvModules.default ];
 
   agents.skills.pack-a = inputs.pack-a;
-  agents.mcp.enable = true;
   agents.mcp.servers.context7 = {
     command = "npx";
     args = [ "-y" "@upstash/context7-mcp" ];
   };
+  agents.grok.enableMcpIntegration = true;
+  agents.grok.enableSkillsIntegration = true;
 }
 ```
 
-Skill dests are written when `agents.skills` is non-empty. MCP files are written when `agents.mcp.enable` is true. `agents.claudeSkills = false` skips `.claude/skills`. Unmarked skill directories are left alone. Existing MCP files are renamed to `*.old` on first takeover. Per-file stamps are named `*.agents-nix`; add those to gitignore too.
+Filling a catalog writes nothing until an Agent’s matching integration flag is on. MCP dests: `.mcp.json` (Claude, Pi, Grok, Muse), `.agents/mcp_config.json` (Antigravity), `.codex/config.toml`, `opencode.json`. Skills dests: `.agents/skills`, and `.claude/skills` when Claude’s skills flag is on. Shared dests are one file. Unmarked skill directories are left alone. An existing MCP dest is renamed to `*.old` and replaced.
 
 ## lib
 

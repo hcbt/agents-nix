@@ -8,6 +8,34 @@ let
   cfg = config.agents;
   agentsLib = import ../../lib { inherit lib; };
 
+  v1Agents = [
+    "grok"
+    "muse-code"
+    "claude-code"
+    "codex"
+    "opencode"
+    "antigravity-cli"
+    "pi-coding-agent"
+  ];
+
+  mcpShared = [
+    "claude-code"
+    "pi-coding-agent"
+    "grok"
+    "muse-code"
+  ];
+
+  skillShared = [
+    "grok"
+    "muse-code"
+    "codex"
+    "opencode"
+    "antigravity-cli"
+    "pi-coding-agent"
+  ];
+
+  anyFlag = flag: names: lib.any (name: cfg.${name}.${flag}) names;
+
   skillEntryType = lib.types.either lib.types.path (
     lib.types.submodule {
       options = {
@@ -19,6 +47,39 @@ let
       };
     }
   );
+
+  agentOptions = lib.listToAttrs (
+    map (name: {
+      inherit name;
+      value = {
+        enableMcpIntegration = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Write this Agent's project MCP dest from {option}`agents.mcp.servers`.
+          '';
+        };
+        enableSkillsIntegration = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = ''
+            Write this Agent's project skill dest from {option}`agents.skills`.
+          '';
+        };
+      };
+    }) v1Agents
+  );
+
+  writeMcp = cfg.mcp.servers != { } && anyFlag "enableMcpIntegration" v1Agents;
+  writeSkills = cfg.skills != { } && anyFlag "enableSkillsIntegration" v1Agents;
+
+  mcpDests =
+    lib.optionals (anyFlag "enableMcpIntegration" mcpShared) [ ".mcp.json" ]
+    ++ lib.optionals (anyFlag "enableMcpIntegration" [ "antigravity-cli" ]) [
+      ".agents/mcp_config.json"
+    ]
+    ++ lib.optionals (anyFlag "enableMcpIntegration" [ "codex" ]) [ ".codex/config.toml" ]
+    ++ lib.optionals (anyFlag "enableMcpIntegration" [ "opencode" ]) [ "opencode.json" ];
 in
 {
   options.agents = {
@@ -31,31 +92,22 @@ in
       '';
     };
 
-    mcp.enable = lib.mkEnableOption "project-local MCP config files";
-
     mcp.servers = lib.mkOption {
       type = lib.types.attrsOf lib.types.attrs;
       default = { };
-      description = "MCP servers written to project config files.";
+      description = "MCP servers written to project dests of opted-in Agents.";
     };
+  }
+  // agentOptions;
 
-    claudeSkills = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = ''
-        Also install skills under {file}`.claude/skills`.
-        {file}`.agents/skills` is always written when skills are set.
-      '';
-    };
-  };
-
-  config.enterShell = lib.mkIf (cfg.mcp.enable || cfg.skills != { }) (
+  config.enterShell = lib.mkIf (writeMcp || writeSkills) (
     agentsLib.mkProjectHook {
       inherit pkgs;
       inherit (cfg) skills;
       mcpServers = cfg.mcp.servers;
-      mcpEnable = cfg.mcp.enable;
-      inherit (cfg) claudeSkills;
+      mcpDests = if writeMcp then mcpDests else [ ];
+      agentsSkills = writeSkills && anyFlag "enableSkillsIntegration" skillShared;
+      claudeSkills = writeSkills && cfg.claude-code.enableSkillsIntegration;
     }
   );
 }

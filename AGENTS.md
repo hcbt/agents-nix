@@ -35,7 +35,7 @@ The change is done when the check passes and every new behavior has an assert.
 
 **Grok or Muse module** — `modules/home/grok.nix` or `modules/home/muse-code.nix`. `settings` keys are camelCase in Nix; `toFileKeys` writes snake_case.
 
-**Project-local dests or MCP files** — `lib/install.nix`, `lib/mcp-files.nix`, assert in `tests/eval-devenv.nix`. Unmarked skill dests are refused. MCP takeover overwrites and leaves `*.old`.
+**Project-local dests or MCP files** — `lib/install.nix`, `lib/mcp-files.nix`, `modules/devenv/default.nix`, assert in `tests/eval-devenv.nix`. Per-Agent `enableMcpIntegration` / `enableSkillsIntegration`. Unmarked skill dests are refused. Existing MCP dests become `*.old`.
 
 **Skill ids, packs, standalone entries** — `lib/discover.nix`, `lib/bundle.nix`.
 
