@@ -9,7 +9,7 @@ A CLI coding harness configured through a `programs.<name>` Home Manager module.
 _Avoid_: editor, IDE fork, GUI, VS Code fork
 
 **Catalog**:
-A user-level declaration of MCP servers, skills, or user instructions. Every enabled Agent inherits each Catalog unless that Agent disables or overrides it.
+A declaration of MCP servers, skills, or user instructions. An Agent receives a Catalog only when that Agent’s matching integration flag is on.
 _Avoid_: bundle, pool, registry, source
 
 **Skill**:
@@ -33,7 +33,7 @@ A Catalog entry that is one Skill directory (`SKILL.md` at the path root). Its i
 _Avoid_: explicit skill, extra skill, reserved prefix
 
 **Project-local**:
-Installing the skills Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. Dests are named explicitly; an unmarked existing dest is refused. The shared project dest is `.agents/skills`; a per-harness folder is added only when that harness does not read `.agents`.
+Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. An unmarked existing dest is refused. The shared project dest is `.agents/skills`; a per-harness folder is added only when that harness does not read `.agents`.
 _Avoid_: vendoring, target, local skills as a second catalog
 
 **User instructions**:
@@ -41,8 +41,8 @@ The always-loaded markdown file an Agent reads at session start. Filenames diffe
 _Avoid_: rules, memory, CLAUDE.md (as the concept)
 
 **Inheritance**:
-An enabled Agent receiving a Catalog, only while the agents layer is on. Each Catalog can be turned off or overlaid on that Agent. A disabled Agent gets no files from this flake. Config without installing the CLI is `enable = true` and `package = null`.
-_Avoid_: wrapping, sync, target, file sink
+An enabled Agent receiving a Catalog because that Agent’s integration flag for that Catalog is on. A disabled Agent gets no files from this flake. Config without installing the CLI is `enable = true` and `package = null`.
+_Avoid_: wrapping, sync, target, file sink, master switch
 
 **Overlay**:
 Per-Agent additions or replacements on top of an inherited Catalog. The Agent wins on the same name. There is no way to subtract a single inherited item in v1.
