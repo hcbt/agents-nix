@@ -22,16 +22,16 @@ let
 in
 {
   options.agents = {
-    enable = lib.mkEnableOption "project-local agent skills and MCP";
-
     skills = lib.mkOption {
       type = lib.types.attrsOf skillEntryType;
       default = { };
       description = ''
         Skill packs and standalone skills. Same type as
-        {option}`programs.agents.skills`.
+        {option}`agents.skills` on the Home Manager module.
       '';
     };
+
+    mcp.enable = lib.mkEnableOption "project-local MCP config files";
 
     mcp.servers = lib.mkOption {
       type = lib.types.attrsOf lib.types.attrs;
@@ -49,12 +49,13 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    enterShell = agentsLib.mkProjectHook {
+  config.enterShell = lib.mkIf (cfg.mcp.enable || cfg.skills != { }) (
+    agentsLib.mkProjectHook {
       inherit pkgs;
       inherit (cfg) skills;
       mcpServers = cfg.mcp.servers;
+      mcpEnable = cfg.mcp.enable;
       inherit (cfg) claudeSkills;
-    };
-  };
+    }
+  );
 }

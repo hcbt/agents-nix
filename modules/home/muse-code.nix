@@ -78,7 +78,7 @@ in
       type = lib.types.bool;
       default = false;
       description = ''
-        Inherit skills from {option}`programs.agents.skills`.
+        Inherit skills from {option}`agents.skills`.
       '';
     };
 
@@ -86,7 +86,7 @@ in
       type = lib.types.bool;
       default = false;
       description = ''
-        Inherit user instructions from {option}`programs.agents.instructions`.
+        Inherit user instructions from {option}`agents.instructions`.
       '';
     };
 

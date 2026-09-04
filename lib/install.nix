@@ -66,6 +66,7 @@ in
       pkgs,
       skills ? { },
       mcpServers ? { },
+      mcpEnable ? false,
       claudeSkills ? true,
     }:
     let
@@ -83,7 +84,7 @@ in
           '';
       jsonFormat = pkgs.formats.json { };
       tomlFormat = pkgs.formats.toml { };
-      hasMcp = mcpServers != { };
+      hasMcp = mcpEnable;
       mcpFiles = [
         {
           rel = ".mcp.json";

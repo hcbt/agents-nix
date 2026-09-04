@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.programs.agents;
+  cfg = config.agents;
   agentsLib = import ../../lib { inherit lib; };
 
   skillEntryType = lib.types.either lib.types.path (
@@ -37,9 +37,7 @@ let
   inheritSkills = agentCfg: agentCfg.enableSkillsIntegration && cfg.skills != { };
 in
 {
-  options.programs.agents = {
-    enable = lib.mkEnableOption "shared agent catalogs (MCP, skills, user instructions)";
-
+  options.agents = {
     skills = lib.mkOption {
       type = lib.types.attrsOf skillEntryType;
       default = { };
@@ -51,12 +49,14 @@ in
       '';
     };
 
+    mcp.enable = lib.mkEnableOption "shared MCP catalog assigned to programs.mcp";
+
     mcp.servers = lib.mkOption {
       type = lib.types.attrsOf lib.types.attrs;
       default = { };
       description = ''
-        MCP servers assigned to {option}`programs.mcp.servers`.
-        {option}`programs.mcp.enable` is turned on when this is non-empty.
+        MCP servers assigned to {option}`programs.mcp.servers` when
+        {option}`agents.mcp.enable` is true.
       '';
     };
 
@@ -65,24 +65,20 @@ in
       default = null;
       description = ''
         Shared user instructions. Each enabled agent writes this to its
-        instruction file ({file}`AGENTS.md` or {file}`CLAUDE.md`).
+        instruction file ({file}`AGENTS.md` or {file}`CLAUDE.md`) when
+        {option}`enableContextIntegration` is true.
       '';
     };
   };
 
-  config = lib.mkIf cfg.enable {
-    programs.mcp = lib.mkIf (cfg.mcp.servers != { }) {
+  config = {
+    programs.mcp = lib.mkIf cfg.mcp.enable {
       enable = true;
       servers = cfg.mcp.servers;
     };
 
     programs.grok = lib.mkIf config.programs.grok.enable (
       lib.mkMerge [
-        {
-          enableMcpIntegration = lib.mkDefault true;
-          enableSkillsIntegration = lib.mkDefault true;
-          enableContextIntegration = lib.mkDefault true;
-        }
         (lib.mkIf (inheritSkills config.programs.grok) { skills = bundled; })
         (lib.mkIf (inheritInstructions config.programs.grok) {
           context = lib.mkDefault cfg.instructions;
@@ -92,11 +88,6 @@ in
 
     programs.muse-code = lib.mkIf config.programs.muse-code.enable (
       lib.mkMerge [
-        {
-          enableMcpIntegration = lib.mkDefault true;
-          enableSkillsIntegration = lib.mkDefault true;
-          enableContextIntegration = lib.mkDefault true;
-        }
         (lib.mkIf (inheritSkills config.programs.muse-code) { skills = bundled; })
         (lib.mkIf (inheritInstructions config.programs.muse-code) {
           context = lib.mkDefault cfg.instructions;
