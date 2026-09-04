@@ -41,7 +41,7 @@ Home Manager and devenv modules that declare CLI coding agents and the catalogs 
 }
 ```
 
-Project dests (gitignored): `.agents/skills`, `.claude/skills`, `.mcp.json`, plus holdout MCP files for Grok, Codex, and OpenCode. Unmarked skill directories are left alone. Existing MCP files are renamed to `*.old` on first takeover.
+Project dests (gitignored): `.agents/skills`, `.claude/skills`, `.mcp.json`, plus holdout MCP files for Grok, Codex, and OpenCode. Unmarked skill directories are left alone. Existing MCP files are renamed to `*.old` on first takeover. Per-file stamps are named `*.agents-nix`; add those to gitignore too.
 
 ## lib
 

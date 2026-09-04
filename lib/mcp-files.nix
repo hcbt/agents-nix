@@ -3,8 +3,7 @@ let
   # Project files do not use Home Manager's MCP transformers. String env
   # values pass through; `{ file = path; }` becomes a wrapper at install
   # time only for stdio servers when pkgs is available (see wrapEnv).
-  asStringEnv =
-    env: lib.mapAttrs (_: v: if builtins.isAttrs v && v ? file then v.file else v) (env or { });
+  asStringEnv = env: lib.mapAttrs (_: v: if builtins.isAttrs v && v ? file then v.file else v) env;
 
   jsonServer =
     server:

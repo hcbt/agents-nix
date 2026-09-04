@@ -51,7 +51,9 @@ let
           fi
         }
         take_file "$PWD/${spec.rel}"
+        rm -f "$PWD/${spec.rel}"
         cp ${lib.escapeShellArg (toString spec.src)} "$PWD/${spec.rel}"
+        chmod u+w "$PWD/${spec.rel}"
         touch "$PWD/${spec.rel}.agents-nix"
       ''
     ) files;
