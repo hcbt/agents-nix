@@ -19,10 +19,10 @@ let
     ) config.programs.mcp.servers
   );
 
-  mcpServers = lib.recursiveUpdate transformedMcpServers (cfg.settings.mcp_servers or { });
+  mcpServers = lib.recursiveUpdate transformedMcpServers (cfg.settings.mcpServers or { });
 
   settings =
-    (removeAttrs cfg.settings [ "mcp_servers" ])
+    (removeAttrs cfg.settings [ "mcpServers" ])
     // lib.optionalAttrs (mcpServers != { }) { mcp_servers = mcpServers; };
 
   skillFiles = lib.mapAttrs' (
@@ -46,8 +46,9 @@ in
       default = false;
       description = ''
         Merge {option}`programs.mcp.servers` into
-        {option}`programs.grok.settings.mcp_servers`.
+        {option}`programs.grok.settings.mcpServers`.
         Settings-based servers take precedence on name clash.
+        Written as {code}`mcp_servers` in {file}`config.toml`.
       '';
     };
 

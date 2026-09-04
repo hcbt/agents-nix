@@ -42,10 +42,14 @@ let
     lib.mapAttrs toMuseServer config.programs.mcp.servers
   );
 
-  mcpServers = lib.recursiveUpdate transformedMcpServers (cfg.settings.mcp_servers or { });
+  mcpServers = lib.recursiveUpdate transformedMcpServers (cfg.settings.mcpServers or { });
 
   settings =
-    (removeAttrs cfg.settings [ "mcp_servers" ])
+    (removeAttrs cfg.settings [
+      "mcpServers"
+      "schemaVersion"
+    ])
+    // lib.optionalAttrs (cfg.settings ? schemaVersion) { schema_version = cfg.settings.schemaVersion; }
     // lib.optionalAttrs (mcpServers != { }) { mcp_servers = mcpServers; };
 
   skillFiles = lib.mapAttrs' (
@@ -69,8 +73,9 @@ in
       default = false;
       description = ''
         Merge {option}`programs.mcp.servers` into
-        {option}`programs.muse-code.settings.mcp_servers`.
+        {option}`programs.muse-code.settings.mcpServers`.
         Settings-based servers take precedence on name clash.
+        Written as {code}`mcp_servers` in {file}`settings.json`.
       '';
     };
 
@@ -95,7 +100,7 @@ in
       default = { };
       description = ''
         Configuration written to {file}`~/.config/muse/settings.json`.
-        Must include {code}`schema_version = 1` or Muse refuses to start.
+        Must include {option}`schemaVersion` (use 1) or Muse refuses to start.
       '';
     };
 
@@ -123,7 +128,7 @@ in
     assertions = [
       {
         assertion = settings == { } || settings ? schema_version;
-        message = "programs.muse-code.settings must set schema_version (use 1)";
+        message = "programs.muse-code.settings must set schemaVersion (use 1)";
       }
     ];
 
