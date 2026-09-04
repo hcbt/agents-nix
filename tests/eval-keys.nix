@@ -19,8 +19,8 @@ assert
     mcp_servers.linear.startup_timeout_sec = 60;
   };
 assert
-  toFileKeys { env.CONTEXT7_API_KEY = "x"; } == {
-    env.CONTEXT7_API_KEY = "x";
+  toFileKeys { env.MY_API_KEY = "x"; } == {
+    env.MY_API_KEY = "x";
   };
 assert
   toFileKeys { marketplace.default_skills_installs_purged = true; } == {
