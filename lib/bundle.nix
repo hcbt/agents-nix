@@ -17,9 +17,10 @@ in
           rewritten = setFrontmatterName id original;
           skillMd = pkgs.writeText "${id}-SKILL.md" rewritten;
         in
-        pkgs.runCommand "agent-skill-${id}" { } ''
+        pkgs.runCommand "agent-skill-${id}" { src = skill.storePath; } ''
           mkdir -p "$out"
-          cp -aL ${lib.escapeShellArg (toString skill.storePath)}/. "$out/"
+          cp -aL "$src"/. "$out/"
+          chmod -R u+w "$out"
           cp ${skillMd} "$out/SKILL.md"
         '';
     in
