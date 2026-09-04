@@ -45,7 +45,7 @@ Catalogs live at `agents.*`. `agents.mcp.enable` assigns `programs.mcp` and does
 }
 ```
 
-Filling a catalog writes nothing until an Agent’s matching integration flag is on. MCP dests: `.mcp.json` (Claude, Pi, Grok, Muse), `.agents/mcp_config.json` (Antigravity), `.codex/config.toml`, `opencode.json`. Skills dests: `.agents/skills`, and `.claude/skills` when Claude’s skills flag is on. Shared dests are one file. Unmarked skill directories are left alone. An existing MCP dest is renamed to `*.old` and replaced.
+Filling a catalog writes nothing until an Agent’s matching integration flag is on. MCP dests: `.mcp.json` (Claude, Pi, Grok, Muse), `.agents/mcp_config.json` (Antigravity), `.codex/config.toml`, `opencode.json`. Skills dests: `.agents/skills`, and `.claude/skills` when Claude’s skills flag is on. Shared dests are one file. Unmarked skill directories are left alone. An existing MCP dest that differs is renamed to `*.old` and replaced.
 
 ## lib
 

@@ -33,7 +33,7 @@ A Catalog entry that is one Skill directory (`SKILL.md` at the path root). Its i
 _Avoid_: explicit skill, extra skill, reserved prefix
 
 **Project-local**:
-Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. A dest is written only when at least one Agent that maps to it has that Catalog’s integration flag on. An existing skill dest without this flake’s marker is refused. An existing MCP dest is renamed to `*.old` and replaced.
+Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. A dest is written only when at least one Agent that maps to it has that Catalog’s integration flag on. An existing skill dest without this flake’s marker is refused. An existing MCP dest that differs is renamed to `*.old` and replaced; an identical dest is left in place.
 _Avoid_: vendoring, target, local skills as a second catalog
 
 **Shared dest**:

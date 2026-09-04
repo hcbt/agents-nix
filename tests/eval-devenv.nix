@@ -157,9 +157,23 @@ pkgs.runCommand "eval-devenv-ok"
       assert_ghidra_json .mcp.json
       no_breadcrumb .
       ${grokMcp.config.enterShell}
-      test -f .mcp.json.old
+      test ! -e .mcp.json.old
       test ! -e .mcp.json.agents-nix
       assert_ghidra_json .mcp.json
+      printf '%s\n' '{"mcpServers":{}}' > .mcp.json
+      ${grokMcp.config.enterShell}
+      test -f .mcp.json.old
+      "$jq" -e '.mcpServers == {}' .mcp.json.old >/dev/null
+      assert_ghidra_json .mcp.json
+    )
+
+    mkdir "$tmp/nounset"
+    (
+      set +u
+      unset ZDOTDIR
+      cd "$tmp/nounset"
+      ${grokMcp.config.enterShell}
+      printf '%s' "$ZDOTDIR" >/dev/null
     )
 
     mkdir "$tmp/shared-mcp"

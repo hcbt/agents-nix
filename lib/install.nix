@@ -37,22 +37,26 @@ let
     '';
 
   mcpHook =
-    files:
+    cmpBin: files:
     lib.concatMapStringsSep "\n" (
       spec:
       lib.optionalString (spec.src != null) ''
         take_file() {
           local file="$1"
+          local src="$2"
           mkdir -p "$(dirname "$file")"
+          if [ -e "$file" ] && ${lib.escapeShellArg cmpBin} -s "$file" "$src"; then
+            return 0
+          fi
           if [ -e "$file" ]; then
             rm -rf "$file.old"
             mv "$file" "$file.old"
           fi
+          rm -f "$file"
+          cp "$src" "$file"
+          chmod u+w "$file"
         }
-        take_file "$PWD/${spec.rel}"
-        rm -f "$PWD/${spec.rel}"
-        cp ${lib.escapeShellArg (toString spec.src)} "$PWD/${spec.rel}"
-        chmod u+w "$PWD/${spec.rel}"
+        take_file "$PWD/${spec.rel}" ${lib.escapeShellArg (toString spec.src)}
       ''
     ) files;
 in
@@ -99,10 +103,12 @@ in
       }) mcpDests;
     in
     ''
-      set -euo pipefail
-      ${skillsHook {
-        inherit bundleDrv agentsSkills claudeSkills;
-      }}
-      ${mcpHook mcpFiles}
+      (
+        set -euo pipefail
+        ${skillsHook {
+          inherit bundleDrv agentsSkills claudeSkills;
+        }}
+        ${mcpHook "${pkgs.diffutils}/bin/cmp" mcpFiles}
+      )
     '';
 }
