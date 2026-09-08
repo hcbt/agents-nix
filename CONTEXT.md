@@ -59,3 +59,15 @@ _Avoid_: exclude, deny list, filter
 **Extension**:
 Adding options or assigning `config` for an Agent module Home Manager already ships, without redeclaring options it already owns.
 _Avoid_: wrapping, forking, replacing, redeclaring
+
+**Declarative settings**:
+Agent configuration whose desired value is supplied by Nix. Declarative settings remain Nix-owned across activations, including when a previously declared key is removed.
+_Avoid_: static settings, frozen config
+
+**Runtime state**:
+Agent-owned, user-local data written while the Agent runs and not declared through Nix, such as workspace trust decisions and interface bookkeeping. Runtime state survives Home Manager activation and rollback.
+_Avoid_: dynamic settings, dirty config
+
+**Ownership snapshot**:
+The last successfully applied Declarative settings, retained outside an Agent's configuration file so a later activation can distinguish removed Declarative settings from Runtime state.
+_Avoid_: ledger, manifest, baseline
