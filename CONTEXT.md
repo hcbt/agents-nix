@@ -33,23 +33,27 @@ A Catalog entry that is one Skill directory (`SKILL.md` at the path root). Its i
 _Avoid_: explicit skill, extra skill, reserved prefix
 
 **Project-local**:
-Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. A dest is written only when at least one Agent that maps to it has that Catalog’s integration flag on. An existing skill dest without this flake’s marker is refused. An existing MCP dest that differs is renamed to `*.old` and replaced; an identical dest is left in place.
+Installing a Catalog into a project directory (gitignored, nix-managed) as well as into the user home. Same Catalog, different dest. A skill dest is written under Dest opt-in. An MCP dest is written when at least one Agent that maps to it has MCP integration on. An existing skill dest without this flake’s marker is refused. An existing MCP dest that differs is renamed to `*.old` and replaced; an identical dest is left in place.
 _Avoid_: vendoring, target, local skills as a second catalog
 
 **Shared dest**:
-A project file more than one Agent reads for the same Catalog. Opting in any of those Agents writes that one file with the full Catalog. Never split per Agent.
+A project file more than one Agent reads for the same Catalog. Never split per Agent. The skills Shared dest is one directory; Dest opt-in writes the full skills Catalog there. An MCP Shared dest is still written when any mapped Agent has MCP integration on.
 _Avoid_: per-agent copy, `.mcp.json.grok`
 
 **Holdout**:
-A project dest only one Agent reads. Written only when that Agent’s matching flag is on.
+A project dest only one Agent reads. The skills Holdout is written under Dest opt-in. An MCP Holdout is still written when that Agent’s MCP flag is on.
 _Avoid_: extra config, sidecar
+
+**Dest opt-in**:
+Naming a project dest so its Catalog is written there. Devenv skill dests use this instead of an Agent flag. Filling the skills Catalog is not enough.
+_Avoid_: target, per-agent skills flag
 
 **User instructions**:
 The always-loaded markdown file an Agent reads at session start. Filenames differ by Agent (`AGENTS.md`, `CLAUDE.md`); the Catalog is the content, not the filename.
 _Avoid_: rules, memory, CLAUDE.md (as the concept)
 
 **Inheritance**:
-An Agent receiving a Catalog because that Agent’s matching integration flag is on. Filling a Catalog is not enough. Home Manager also requires the Agent enabled (`package = null` still configures without installing the CLI); devenv has no Agent enable and writes project dests.
+An Agent receiving a Catalog because that Agent’s matching integration flag is on. Filling a Catalog is not enough. Home Manager also requires the Agent enabled (`package = null` still configures without installing the CLI). Devenv has no Agent enable: MCP dests still follow those flags; skill dests follow Dest opt-in, and an Agent receives them by scanning the dest.
 _Avoid_: wrapping, sync, target, file sink, master switch
 
 **Overlay**:
