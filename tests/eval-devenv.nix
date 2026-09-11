@@ -51,6 +51,12 @@ let
       agents.muse-code.enableMcpIntegration = true;
     }
   ];
+  ompMcp = eval [
+    {
+      agents.mcp.servers.ghidra = ghidra;
+      agents.omp.enableMcpIntegration = true;
+    }
+  ];
   antigravityMcp = eval [
     {
       agents.mcp.servers.ghidra = ghidra;
@@ -76,6 +82,12 @@ let
       agents.grok.enableSkillsIntegration = true;
     }
   ];
+  ompSkills = eval [
+    {
+      agents.skills.review = ./fixtures/standalone;
+      agents.omp.enableSkillsIntegration = true;
+    }
+  ];
   claudeSkills = eval [
     {
       agents.skills.review = ./fixtures/standalone;
@@ -98,6 +110,7 @@ let
     "opencode"
     "antigravity-cli"
     "pi-coding-agent"
+    "omp"
   ];
 in
 assert lib.assertMsg (!(base.options.agents ? enable)) "agents.enable must not exist";
@@ -197,6 +210,16 @@ pkgs.runCommand "eval-devenv-ok"
       assert_ghidra_json .mcp.json
     )
 
+    mkdir "$tmp/omp-mcp"
+    (
+      cd "$tmp/omp-mcp"
+      ${ompMcp.config.enterShell}
+      test -f .mcp.json
+      test ! -e .omp/mcp.json
+      test ! -e .grok/config.toml
+      assert_ghidra_json .mcp.json
+    )
+
     mkdir "$tmp/antigravity-mcp"
     (
       cd "$tmp/antigravity-mcp"
@@ -230,6 +253,17 @@ pkgs.runCommand "eval-devenv-ok"
       ${grokSkills.config.enterShell}
       test -d .agents/skills/review
       test -f .agents/skills/.agents-nix-managed.json
+      test ! -e .claude/skills
+      test ! -e .mcp.json
+    )
+
+    mkdir "$tmp/omp-skills"
+    (
+      cd "$tmp/omp-skills"
+      ${ompSkills.config.enterShell}
+      test -d .agents/skills/review
+      test -f .agents/skills/.agents-nix-managed.json
+      test ! -e .omp/skills
       test ! -e .claude/skills
       test ! -e .mcp.json
     )

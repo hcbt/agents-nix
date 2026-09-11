@@ -29,11 +29,13 @@ Run commands inside devenv: `devenv shell -- <cmd>`.
 
 The change is done when the check passes and every new behavior has an assert.
 
-**Catalog inheritance for Grok or Muse** — `modules/home/catalog.nix`, assert in `tests/eval-hm.nix`.
+**Catalog inheritance for Grok, Muse, or OMP** — `modules/home/catalog.nix`, assert in `tests/eval-hm.nix`.
 
 **Catalog inheritance for claude-code, codex, opencode, antigravity-cli, pi-coding-agent** — `modules/home/integrations.nix`, assert in `tests/eval-hm.nix`. Where Home Manager already declares an option, assign `config` and add new options only.
 
 **Grok or Muse module** — `modules/home/grok.nix` or `modules/home/muse-code.nix`. `settings` keys are camelCase in Nix; `toFileKeys` writes snake_case.
+
+**OMP module** — `modules/home/omp.nix`. `settings` keys stay camelCase in YAML. `config.yml` and `mcp.json` are writable copies.
 
 **Project-local dests or MCP files** — `lib/install.nix`, `lib/mcp-files.nix`, `modules/devenv/default.nix`, assert in `tests/eval-devenv.nix`. Per-Agent `enableMcpIntegration` / `enableSkillsIntegration`. Unmarked skill dests are refused. Differing MCP dests become `*.old`. `enterShell` stays in a subshell.
 
@@ -43,4 +45,4 @@ The change is done when the check passes and every new behavior has an assert.
 
 **A new check file** — register it under `outputs.checks` in `flake.nix`.
 
-**A new harness** — write an ADR first. The v1 list is closed in ADR 0004.
+**A new harness** — write an ADR first. The v1 list is closed in ADR 0032.

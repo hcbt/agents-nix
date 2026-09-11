@@ -16,6 +16,7 @@ let
     "opencode"
     "antigravity-cli"
     "pi-coding-agent"
+    "omp"
   ];
 
   mcpShared = [
@@ -23,6 +24,7 @@ let
     "pi-coding-agent"
     "grok"
     "muse-code"
+    "omp"
   ];
 
   skillShared = [
@@ -32,6 +34,7 @@ let
     "opencode"
     "antigravity-cli"
     "pi-coding-agent"
+    "omp"
   ];
 
   anyFlag = flag: names: lib.any (name: cfg.${name}.${flag}) names;

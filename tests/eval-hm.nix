@@ -75,6 +75,30 @@ let
         default = null;
       };
     };
+
+    options.programs.omp = {
+      enable = lib.mkEnableOption "omp";
+      enableMcpIntegration = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+      };
+      enableSkillsIntegration = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+      };
+      enableContextIntegration = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+      };
+      skills = lib.mkOption {
+        type = lib.types.attrs;
+        default = { };
+      };
+      context = lib.mkOption {
+        type = lib.types.nullOr (lib.types.either lib.types.lines lib.types.path);
+        default = null;
+      };
+    };
   };
 
   eval =
@@ -244,6 +268,151 @@ let
     }
   ];
 
+  ompOn = eval [
+    { programs.omp.enable = true; }
+  ];
+
+  ompSkillsOff = eval [
+    {
+      programs.omp.enable = true;
+      agents.skills.review = ./fixtures/standalone;
+    }
+  ];
+
+  ompInheritsSkills = eval [
+    {
+      programs.omp.enable = true;
+      programs.omp.enableSkillsIntegration = true;
+      agents.skills.review = ./fixtures/standalone;
+    }
+  ];
+
+  ompInheritsContext = eval [
+    {
+      programs.omp.enable = true;
+      programs.omp.enableContextIntegration = true;
+      agents.instructions = "be brief";
+    }
+  ];
+
+  ompTestLib = testLib // {
+    hm = testLib.hm // {
+      strings.isPathLike = builtins.isPath;
+      mcp = {
+        transformMcpServer = { server, ... }: server;
+        wrapEnvFilesCommand = _: x: x;
+      };
+    };
+  };
+
+  ompModuleStub = {
+    options = {
+      home.packages = lib.mkOption {
+        type = lib.types.listOf lib.types.package;
+        default = [ ];
+      };
+      home.file = lib.mkOption {
+        type = lib.types.attrsOf (
+          lib.types.submodule {
+            options = {
+              enable = lib.mkOption {
+                type = lib.types.bool;
+                default = true;
+              };
+              source = lib.mkOption {
+                type = lib.types.nullOr lib.types.path;
+                default = null;
+              };
+              text = lib.mkOption {
+                type = lib.types.nullOr lib.types.lines;
+                default = null;
+              };
+              force = lib.mkOption {
+                type = lib.types.bool;
+                default = false;
+              };
+            };
+          }
+        );
+        default = { };
+      };
+      home.activation = lib.mkOption {
+        type = lib.types.attrsOf lib.types.anything;
+        default = { };
+      };
+      programs.mcp = {
+        enable = lib.mkEnableOption "mcp";
+        servers = lib.mkOption {
+          type = lib.types.attrsOf lib.types.attrs;
+          default = { };
+        };
+      };
+    };
+  };
+
+  ompEval =
+    extra:
+    lib.evalModules {
+      specialArgs = {
+        inherit pkgs;
+        lib = ompTestLib;
+      };
+      modules = [
+        { _module.args = { inherit pkgs; }; }
+        ompModuleStub
+        ../modules/home/omp.nix
+      ]
+      ++ extra;
+    };
+
+  ompDisabled = ompEval [
+    {
+      programs.omp = {
+        enable = false;
+        skills.review = ./fixtures/standalone;
+        context = "be brief";
+        settings.startup.quiet = true;
+      };
+    }
+  ];
+
+  ompFiles = ompEval [
+    {
+      programs.omp = {
+        enable = true;
+        skills.review = ./fixtures/standalone;
+        context = "be brief";
+        settings.startup.quiet = true;
+      };
+    }
+  ];
+
+  ompMcpFiles = ompEval [
+    {
+      programs.mcp = {
+        enable = true;
+        servers.ghidra.command = "npx";
+      };
+      programs.omp = {
+        enable = true;
+        enableMcpIntegration = true;
+      };
+    }
+  ];
+
+  ompMcpOff = ompEval [
+    {
+      programs.mcp = {
+        enable = true;
+        servers.ghidra.command = "npx";
+      };
+      programs.omp.enable = true;
+    }
+  ];
+
+  ompConfigActivation = ompFiles.config.home.activation.ompConfig.data;
+  ompMcpActivation = ompMcpFiles.config.home.activation.ompMcp.data;
+
   codexMutable = integrationEval [
     {
       programs.codex = {
@@ -407,6 +576,45 @@ assert lib.assertMsg (
 assert lib.assertMsg (
   grokInheritsSkills.config.programs.grok.skills ? review
 ) "enableSkillsIntegration must inherit the skills catalog";
+assert lib.assertMsg (
+  !ompOn.config.programs.omp.enableMcpIntegration
+) "enabling omp must not set enableMcpIntegration";
+assert lib.assertMsg (
+  !ompOn.config.programs.omp.enableSkillsIntegration
+) "enabling omp must not set enableSkillsIntegration";
+assert lib.assertMsg (
+  !ompOn.config.programs.omp.enableContextIntegration
+) "enabling omp must not set enableContextIntegration";
+assert lib.assertMsg (
+  !(ompSkillsOff.config.programs.omp.skills ? review)
+) "a filled skills catalog without enableSkillsIntegration must not inherit";
+assert lib.assertMsg (
+  ompInheritsSkills.config.programs.omp.skills ? review
+) "omp enableSkillsIntegration must inherit the skills catalog";
+assert lib.assertMsg (
+  ompInheritsContext.config.programs.omp.context == "be brief"
+) "omp enableContextIntegration must inherit user instructions";
+assert lib.assertMsg (
+  !(ompDisabled.config.home.file ? ".omp/agent/skills/review")
+) "disabled omp must not write user-home skill dests";
+assert lib.assertMsg (
+  !(ompDisabled.config.home.activation ? ompConfig)
+) "disabled omp must not copy config.yml";
+assert lib.assertMsg (
+  ompFiles.config.home.file ? ".omp/agent/skills/review"
+) "omp skills must write ~/.omp/agent/skills/<id>";
+assert lib.assertMsg (
+  ompFiles.config.home.file.".omp/agent/AGENTS.md".text == "be brief"
+) "omp context must write ~/.omp/agent/AGENTS.md";
+assert lib.assertMsg (
+  ompFiles.config.home.activation ? ompConfig
+) "omp settings must copy a writable ~/.omp/agent/config.yml";
+assert lib.assertMsg (
+  ompMcpFiles.config.home.activation ? ompMcp
+) "omp MCP inheritance must copy a writable ~/.omp/agent/mcp.json";
+assert lib.assertMsg (
+  !(ompMcpOff.config.home.activation ? ompMcp)
+) "omp without enableMcpIntegration must not write mcp.json";
 assert lib.assertMsg codexMutable.config.programs.codex.mutableUserSettings
   "programs.codex.mutableUserSettings must default to true";
 assert lib.assertMsg (
@@ -531,6 +739,21 @@ pkgs.runCommand "eval-hm-ok"
     fi
     cmp "$out/malformed-before.toml" "$config"
     cmp "$out/snapshot-before.toml" "$state/managed-settings.toml"
+
+    # OMP config.yml and mcp.json are writable regular files, not store symlinks.
+    export HOME="$out/omp-home"
+    run() { "$@"; }
+    mkdir -p "$HOME"
+    ${ompConfigActivation}
+    test -f "$HOME/.omp/agent/config.yml"
+    test ! -L "$HOME/.omp/agent/config.yml"
+    test "$(stat -c %a "$HOME/.omp/agent/config.yml")" = 600
+    grep -q 'quiet: true' "$HOME/.omp/agent/config.yml"
+    ${ompMcpActivation}
+    test -f "$HOME/.omp/agent/mcp.json"
+    test ! -L "$HOME/.omp/agent/mcp.json"
+    test "$(stat -c %a "$HOME/.omp/agent/mcp.json")" = 600
+    test "$(yq -r '.mcpServers.ghidra.command' "$HOME/.omp/agent/mcp.json")" = npx
 
     touch "$out/passed"
   ''

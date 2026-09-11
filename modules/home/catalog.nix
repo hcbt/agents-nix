@@ -94,5 +94,14 @@ in
         })
       ]
     );
+
+    programs.omp = lib.mkIf config.programs.omp.enable (
+      lib.mkMerge [
+        (lib.mkIf (inheritSkills config.programs.omp) { skills = bundled; })
+        (lib.mkIf (inheritInstructions config.programs.omp) {
+          context = lib.mkDefault cfg.instructions;
+        })
+      ]
+    );
   };
 }
